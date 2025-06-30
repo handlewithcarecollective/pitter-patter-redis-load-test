@@ -40,6 +40,7 @@ function processMessages(
     const messageMap = new Map<(messages: any) => void, string[]>();
     const versionMap = streamMap.get(name);
     if (!versionMap) continue;
+    const versionsToDelete = new Set<string>();
     for (const { id, message } of messages) {
       for (const [version, resolvers] of versionMap.entries()) {
         const idVersion = id.split("-")[0]!;
@@ -55,8 +56,11 @@ function processMessages(
             messageMap.set(resolve, [message]);
           }
         }
-        versionMap.delete(version);
+        versionsToDelete.add(version);
       }
+    }
+    for (const version of versionsToDelete) {
+      versionMap.delete(version);
     }
     if (versionMap.size === 0) {
       streamMap.delete(name);
