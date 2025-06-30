@@ -8,7 +8,6 @@ let
   pkgs-unstable = import inputs.nixpkgs-unstable { system = pkgs.stdenv.system; };
 in
 {
-  env.REDIS_URL = "redis://localhost:6379";
   # https://devenv.sh/languages/
   languages.rust.enable = true;
   languages.javascript = {
@@ -23,6 +22,8 @@ in
   services.redis.enable = true;
 
   env = {
+    REDIS_HOST = "localhost";
+    REDIS_PORT = 6379;
     NUM_LISTENERS = 1000;
     NUM_POSTERS = 1000;
     NUM_DOCS = 100;
