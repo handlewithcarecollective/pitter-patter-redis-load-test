@@ -48,13 +48,19 @@ async fn long_poll(
         .await
     {
         Err(_) => {
-            // println!("{err:#?}");
             return None;
         }
         Ok(r) => r,
     };
 
-    let messages = response.json::<Vec<Message>>().await.unwrap();
+    let messages_result = response.json::<Vec<Message>>().await;
+    let messages = match messages_result {
+        Err(err) => {
+            println!("{err:#?}");
+            return None;
+        }
+        Ok(json) => json,
+    };
 
     for message in messages.iter() {
         let timestamp_str = &message.timestamp;
