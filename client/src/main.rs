@@ -4,6 +4,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
+use anyhow::Context;
 use rand::Rng;
 
 use reqwest::Client;
@@ -53,10 +54,13 @@ async fn long_poll(
         Ok(r) => r,
     };
 
-    let messages_result = response.json::<Vec<Message>>().await;
+    let text = response.text().await.unwrap();
+    let messages_result = serde_json::from_str::<Vec<Message>>(&text)
+        .with_context(|| format!("Unable to deserialise response. Body was: \"{}\"", text));
+
     let messages = match messages_result {
-        Err(err) => {
-            println!("{err:#?}");
+        Err(_) => {
+            println!("{text:?}");
             return None;
         }
         Ok(json) => json,
