@@ -24,9 +24,9 @@ in
 
   env = {
     POST_INTERVAL = 100;
-    NUM_LISTENERS = 1000;
-    NUM_POSTERS = 1000;
-    NUM_DOCS = 100;
+    NUM_LISTENERS = 10000;
+    NUM_POSTERS = 10000;
+    NUM_DOCS = 1000;
   };
 
   processes = {

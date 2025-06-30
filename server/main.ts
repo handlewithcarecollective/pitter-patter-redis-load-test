@@ -160,7 +160,7 @@ app.get("/messages", async (req, res) => {
     promise,
     new Promise((resolve) => setTimeout(resolve, 30000)).then(() => {
       const versionMap = streamMap.get(stream);
-      if (!versionMap) return;
+      if (!versionMap) return [];
       if ((versionMap.get(version)?.length ?? 0) <= 1) {
         versionMap.delete(version);
         if (versionMap.size === 0) {
@@ -172,6 +172,7 @@ app.get("/messages", async (req, res) => {
           versionMap.get(version)!.filter((r) => r === resolve),
         );
       }
+      return [];
     }),
   ]);
 

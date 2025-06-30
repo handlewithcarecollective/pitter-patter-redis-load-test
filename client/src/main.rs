@@ -60,7 +60,6 @@ async fn long_poll(
 
     let messages = match messages_result {
         Err(_) => {
-            println!("{text:?}");
             return None;
         }
         Ok(json) => json,
