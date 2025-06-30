@@ -4,4 +4,4 @@ COPY . .
 
 RUN npm install
 
-RUN node main.ts
+CMD ["node", "main.ts"]
