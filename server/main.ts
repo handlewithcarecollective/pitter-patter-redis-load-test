@@ -23,6 +23,7 @@ const writeClient = createClient({
 await writeClient.connect();
 
 const streamMap = new Map<string, Map<string, ((messages: any) => void)[]>>();
+const streamCancellations = new Map<string, NodeJS.Timeout>();
 
 let xRead: ReturnType<typeof readClient.xRead> | null = null;
 
@@ -33,12 +34,12 @@ function processMessages(
     restartXRead();
     return;
   }
-  for (const { name, messages } of readMessages as {
+  for (const { name: stream, messages } of readMessages as {
     name: string;
     messages: { id: string; message: any }[];
   }[]) {
     const messageMap = new Map<(messages: any) => void, string[]>();
-    const versionMap = streamMap.get(name);
+    const versionMap = streamMap.get(stream);
     if (!versionMap) continue;
     const versionsToDelete = new Set<string>();
     for (const { id, message } of messages) {
@@ -59,11 +60,13 @@ function processMessages(
         versionsToDelete.add(version);
       }
     }
+
     for (const version of versionsToDelete) {
       versionMap.delete(version);
-    }
-    if (versionMap.size === 0) {
-      streamMap.delete(name);
+
+      if (versionMap.size === 0) {
+        streamMap.delete(stream);
+      }
     }
     for (const [resolve, foundMessages] of messageMap.entries()) {
       resolve(foundMessages);
@@ -131,6 +134,11 @@ app.get("/messages", async (req, res) => {
 
     if (existingResolvers) {
       existingResolvers.push(resolve);
+      const cancellation = streamCancellations.get(`${stream}:${version}`);
+      if (cancellation) {
+        clearTimeout(cancellation);
+        streamCancellations.delete(`${stream}:${version}`);
+      }
     } else {
       existing.set(version, [resolve]);
     }
@@ -148,7 +156,24 @@ app.get("/messages", async (req, res) => {
     }
   }
 
-  const messages = await promise;
+  const messages = await Promise.race([
+    promise,
+    new Promise((resolve) => setTimeout(resolve, 30000)).then(() => {
+      const versionMap = streamMap.get(stream);
+      if (!versionMap) return;
+      if ((versionMap.get(version)?.length ?? 0) <= 1) {
+        versionMap.delete(version);
+        if (versionMap.size === 0) {
+          streamMap.delete(stream);
+        }
+      } else {
+        versionMap.set(
+          version,
+          versionMap.get(version)!.filter((r) => r === resolve),
+        );
+      }
+    }),
+  ]);
 
   res.status(200);
   res.send(messages);
