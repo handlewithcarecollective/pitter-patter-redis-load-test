@@ -1,38 +1,32 @@
 import express from "express";
-import { GlideClient } from "@valkey/valkey-glide";
+import { GlideClient, GlideClientConfiguration } from "@valkey/valkey-glide";
 
 const app = express();
 app.use(express.json());
 
 const port = 3000;
 
-const unblockClient = await GlideClient.createClient({
+const clientOptions: GlideClientConfiguration = {
   addresses: [
     {
       host: process.env["REDIS_HOST"]!,
       port: parseInt(process.env["REDIS_PORT"]!, 10),
     },
   ],
-});
+  ...(process.env["REDIS_PASSWORD"] && {
+    credentials: {
+      username: process.env["REDIS_USERNAME"],
+      password: process.env["REDIS_PASSWORD"],
+    },
+  }),
+};
 
-const readClient = await GlideClient.createClient({
-  addresses: [
-    {
-      host: process.env["REDIS_HOST"]!,
-      port: parseInt(process.env["REDIS_PORT"]!, 10),
-    },
-  ],
-});
+const unblockClient = await GlideClient.createClient(clientOptions);
+
+const readClient = await GlideClient.createClient(clientOptions);
 const readClientId = await readClient.clientId();
 
-const writeClient = await GlideClient.createClient({
-  addresses: [
-    {
-      host: process.env["REDIS_HOST"]!,
-      port: parseInt(process.env["REDIS_PORT"]!, 10),
-    },
-  ],
-});
+const writeClient = await GlideClient.createClient(clientOptions);
 
 const streamMap = new Map<string, Map<string, ((messages: any) => void)[]>>();
 
