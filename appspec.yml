@@ -17,19 +17,19 @@ region: nyc
 services:
   - dockerfile_path: server/Dockerfile
     envs:
-      - key: REDIS_URL
-        scope: RUN_TIME
-        type: SECRET
-        value: EV[1:WPe8qqJrPFkmD0d5HrWsDbKo/wtpetWm:A0DDBvnrYxaQMOj5AcGM+1l+v/6LJvFYodmvJ4NkCHHorECf1lttwmZ1DbVi2fhuXwRKVdPAJL9D5sOze68wtskda+amOxHqfgrDlAmBvYhKuKV5vPVrrrigSt5Bn6+86J5cC0/mG7BilS+72a1ByKMDrOACdU+ducnBVIFJOg==]
       - key: HOSTNAME
         scope: RUN_AND_BUILD_TIME
         value: 0.0.0.0
+      - key: REDIS_URL
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+        value: EV[1:Cg8MT6QBFKdooipuAVLmieq1MoLJQxzY:h4wFPZOKMRkiCxGH83hD4UhjjfwPh+JfeM7VjBzt69UR5d6Whz1ZtGiZJJYvggwAQDmfLowOa/39xG5U8bkesaji/f11+gk9WcRmafm/Vw+tGWuVrCwFLvZk8rPhn7LRaV0Od8y+Tq2LR6RTYkoJXiUhvh9svA7y8NqADzfXjQ==]
     github:
       branch: main
       deploy_on_push: true
       repo: handlewithcarecollective/pitter-patter-redis-load-test
     http_port: 3000
-    instance_count: 4
+    instance_count: 8
     instance_size_slug: apps-d-1vcpu-1gb
     name: pitter-patter-redis-load-test-se
     source_dir: server
@@ -38,21 +38,24 @@ workers:
     envs:
       - key: NUM_LISTENERS
         scope: RUN_TIME
-        value: "100"
+        value: "200"
       - key: NUM_POSTERS
         scope: RUN_TIME
-        value: "100"
+        value: "200"
       - key: NUM_DOCS
         scope: RUN_TIME
-        value: "10"
+        value: "100"
       - key: BASE_URL
         scope: RUN_AND_BUILD_TIME
         value: https://pitpat-server-or5bv.ondigitalocean.app
+      - key: POST_INTERVAL
+        scope: RUN_AND_BUILD_TIME
+        value: "50"
     github:
       branch: main
       deploy_on_push: true
       repo: handlewithcarecollective/pitter-patter-redis-load-test
-    instance_count: 3
+    instance_count: 1
     instance_size_slug: apps-d-4vcpu-8gb
     name: pitter-patter-redis-load-test-cl
     source_dir: client
