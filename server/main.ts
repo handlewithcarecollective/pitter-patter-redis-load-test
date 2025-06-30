@@ -1,51 +1,46 @@
 import express from "express";
-import { GlideClient, GlideClientConfiguration } from "@valkey/valkey-glide";
+import { createClient } from "redis";
 
 const app = express();
 app.use(express.json());
 
 const port = 3000;
 
-const clientOptions: GlideClientConfiguration = {
-  addresses: [
-    {
-      host: process.env["REDIS_HOST"]!,
-      port: parseInt(process.env["REDIS_PORT"]!, 10),
-    },
-  ],
-  ...(process.env["REDIS_PASSWORD"] && {
-    credentials: {
-      username: process.env["REDIS_USERNAME"],
-      password: process.env["REDIS_PASSWORD"],
-    },
-  }),
-  useTLS: process.env["REDIS_TLS"] === "true",
-};
+const unblockClient = createClient({
+  url: process.env["REDIS_URL"],
+});
+await unblockClient.connect();
 
-const unblockClient = await GlideClient.createClient(clientOptions);
-
-const readClient = await GlideClient.createClient(clientOptions);
+const readClient = createClient({
+  url: process.env["REDIS_URL"],
+});
+await readClient.connect();
 const readClientId = await readClient.clientId();
 
-const writeClient = await GlideClient.createClient(clientOptions);
+const writeClient = createClient({
+  url: process.env["REDIS_URL"],
+});
+await writeClient.connect();
 
 const streamMap = new Map<string, Map<string, ((messages: any) => void)[]>>();
 
-let xread: ReturnType<typeof readClient.xread> | null = null;
+let xRead: ReturnType<typeof readClient.xRead> | null = null;
 
 function processMessages(
-  readMessages: Awaited<ReturnType<typeof readClient.xread>>,
+  readMessages: Awaited<ReturnType<typeof readClient.xRead>>,
 ) {
   if (!readMessages) {
     restartXRead();
     return;
   }
-  for (const { key: stream, value } of readMessages) {
+  for (const { name, messages } of readMessages as {
+    name: string;
+    messages: { id: string; message: any }[];
+  }[]) {
     const messageMap = new Map<(messages: any) => void, string[]>();
-    const versionMap = streamMap.get(stream.toString());
+    const versionMap = streamMap.get(name);
     if (!versionMap) continue;
-    for (const [id, messageEntries] of Object.entries(value)) {
-      const message = Object.fromEntries(messageEntries);
+    for (const { id, message } of messages) {
       for (const [version, resolvers] of versionMap.entries()) {
         const idVersion = id.split("-")[0]!;
         if (version >= idVersion) {
@@ -64,7 +59,7 @@ function processMessages(
       }
     }
     if (versionMap.size === 0) {
-      streamMap.delete(stream.toString());
+      streamMap.delete(name);
     }
     for (const [resolve, foundMessages] of messageMap.entries()) {
       resolve(foundMessages);
@@ -75,7 +70,7 @@ function processMessages(
 
 function restartXRead() {
   if (!streamMap.size) {
-    xread = null;
+    xRead = null;
     return;
   }
 
@@ -87,10 +82,11 @@ function restartXRead() {
         .keys()
         .reduce((acc, version) => (acc < version ? acc : version)),
     ])
-    .reduce((acc, [stream, id]) => ({ ...acc, [stream]: id }), {});
+    .map(([stream, id]) => ({ key: stream, id }))
+    .toArray();
 
-  xread = readClient.xread(streams, { block: 30000 });
-  xread.then(processMessages).catch((e) => console.error("XREAD error", e));
+  xRead = readClient.xRead(streams, { BLOCK: 30000 });
+  xRead.then(processMessages).catch((e) => console.error("XREAD error", e));
 }
 
 restartXRead();
@@ -98,7 +94,7 @@ restartXRead();
 app.post("/message", async (req, res) => {
   const { stream, id, message } = req.body;
   try {
-    await writeClient.xadd(stream, Object.entries(message), { id });
+    await writeClient.xAdd(stream, id, message);
   } catch {
     res.status(409);
     res.send(null);
@@ -116,8 +112,8 @@ app.get("/messages", async (req, res) => {
   if (!existing) {
     streamMap.set(stream, new Map([[version, [resolve]]]));
 
-    if (xread) {
-      await unblockClient.customCommand([
+    if (xRead) {
+      await unblockClient.sendCommand([
         "CLIENT",
         "UNBLOCK",
         readClientId.toString(),
@@ -136,8 +132,8 @@ app.get("/messages", async (req, res) => {
     }
 
     if (!alreadyListening) {
-      if (xread) {
-        await unblockClient.customCommand([
+      if (xRead) {
+        await unblockClient.sendCommand([
           "CLIENT",
           "UNBLOCK",
           readClientId.toString(),
