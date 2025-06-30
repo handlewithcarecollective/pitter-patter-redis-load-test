@@ -31,45 +31,45 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: "[client] Extract metadata (tags, labels) for Docker"
-        id: meta
+        id: meta-client
         uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-client
 
       - name: "[client] Build and push Docker image"
-        id: push
+        id: push-client
         uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
         with:
           context: client
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta-client.outputs.tags }}
+          labels: ${{ steps.meta-client.outputs.labels }}
 
       - name: "[client] Generate artifact attestation"
         uses: actions/attest-build-provenance@v2
         with:
           subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}-client
-          subject-digest: ${{ steps.push.outputs.digest }}
+          subject-digest: ${{ steps.push-client.outputs.digest }}
           push-to-registry: true
 
       - name: "[server] Extract metadata (tags, labels) for Docker"
-        id: meta
+        id: meta-server
         uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-server
 
       - name: "[server] Build and push Docker image"
-        id: push
+        id: push-server
         uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
         with:
           context: server
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta-server.outputs.tags }}
+          labels: ${{ steps.meta-server.outputs.labels }}
 
       - name: "[server] Generate artifact attestation"
         uses: actions/attest-build-provenance@v2
         with:
           subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}-server
-          subject-digest: ${{ steps.push.outputs.digest }}
+          subject-digest: ${{ steps.push-server.outputs.digest }}
           push-to-registry: true
