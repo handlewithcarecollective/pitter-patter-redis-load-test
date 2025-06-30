@@ -34,7 +34,7 @@ jobs:
         id: meta-client
         uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-client
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_BASE }}-client
 
       - name: "[client] Build and push Docker image"
         id: push-client
@@ -48,7 +48,7 @@ jobs:
       - name: "[client] Generate artifact attestation"
         uses: actions/attest-build-provenance@v2
         with:
-          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}-client
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_BASE}}-client
           subject-digest: ${{ steps.push-client.outputs.digest }}
           push-to-registry: true
 
@@ -56,7 +56,7 @@ jobs:
         id: meta-server
         uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-server
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_BASE }}-server
 
       - name: "[server] Build and push Docker image"
         id: push-server
@@ -70,6 +70,6 @@ jobs:
       - name: "[server] Generate artifact attestation"
         uses: actions/attest-build-provenance@v2
         with:
-          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}-server
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_BASE}}-server
           subject-digest: ${{ steps.push-server.outputs.digest }}
           push-to-registry: true
