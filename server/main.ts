@@ -19,6 +19,7 @@ const clientOptions: GlideClientConfiguration = {
       password: process.env["REDIS_PASSWORD"],
     },
   }),
+  useTLS: process.env["REDIS_TLS"] === "true",
 };
 
 const unblockClient = await GlideClient.createClient(clientOptions);
