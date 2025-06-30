@@ -154,6 +154,6 @@ app.get("/messages", async (req, res) => {
   res.send(messages);
 });
 
-app.listen(port, () => {
+app.listen(port, process.env["HOSTNAME"] ?? "localhost", () => {
   console.log(`Listening on port ${port}`);
 });
