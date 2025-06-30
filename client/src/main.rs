@@ -1,7 +1,7 @@
 use std::{
     env,
     sync::Arc,
-    time::{SystemTime, UNIX_EPOCH},
+    time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
 use anyhow::Context;
@@ -126,6 +126,14 @@ async fn main() {
         },
     };
 
+    let post_interval = match env::var("POST_INTERVAL") {
+        Err(_) => 100,
+        Ok(interval) => match interval.parse::<u32>() {
+            Err(_) => 100,
+            Ok(parsed) => parsed,
+        },
+    };
+
     for i in 0..num_listeners {
         let http_client = http_client.clone();
         let doc_id = rand::rng().random_range(0..num_docs);
@@ -165,9 +173,11 @@ async fn main() {
         let http_client = http_client.clone();
         let doc_id = rand::rng().random_range(0..num_docs);
         let base_url = base_url.clone();
+        let mut interval = tokio::time::interval(Duration::new(0, post_interval * 1000));
         handle = Some(task::spawn(async move {
             let mut version = 0;
             loop {
+                interval.tick().await;
                 post_message(
                     &http_client,
                     &base_url,

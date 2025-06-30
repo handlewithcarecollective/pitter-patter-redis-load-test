@@ -23,6 +23,7 @@ in
   services.redis.enable = true;
 
   env = {
+    POST_INTERVAL = 100;
     NUM_LISTENERS = 1000;
     NUM_POSTERS = 1000;
     NUM_DOCS = 100;
