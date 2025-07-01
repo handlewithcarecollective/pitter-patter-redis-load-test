@@ -100,7 +100,6 @@ restartXRead();
 
 app.post("/message", async (req, res) => {
   const { stream, id, message } = req.body;
-  console.log(`Received message ${stream}@${id}`);
   try {
     await writeClient.xAdd(stream, id, message);
   } catch {
@@ -114,7 +113,6 @@ app.post("/message", async (req, res) => {
 
 app.get("/messages", async (req, res) => {
   const { stream, version } = req.query as { stream: string; version: string };
-  console.log(`Long poll ${stream}@${version}`);
 
   const { promise, resolve } = Promise.withResolvers<any>();
   const existing = streamMap.get(stream);
