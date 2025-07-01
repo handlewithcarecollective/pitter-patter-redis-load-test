@@ -183,5 +183,6 @@ app.get("/messages", async (req, res) => {
 });
 
 app.listen(port, process.env["HOSTNAME"] ?? "localhost", () => {
+  unblockClient.flushAll();
   console.log(`Listening on port ${port}`);
 });
